@@ -17,7 +17,7 @@ if not os.path.exists(DATA_FILE):
 # 初回用：ランキングON/OFF状態ファイル作成（デフォルトON）
 if not os.path.exists(ENABLED_FILE):
     with open(ENABLED_FILE, 'w') as f:
-        json.dump({"enabled": True}, f)
+        json.dump({"enabled": False}, f)
 
 @app.route("/submit", methods=["POST"])
 def submit_score():
