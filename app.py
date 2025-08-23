@@ -1,9 +1,15 @@
 from flask import Flask, request, jsonify
 import json
 import os
+from flask_cors import CORS
 
 app = Flask(__name__)
 DATA_FILE = "ranking.json"
+
+CORS(app, origins=[
+    "http://localhost:5173",
+    "https://adventus-mortis-website.pages.dev/"
+])
 
 # 初回用：空のランキングファイル作成
 if not os.path.exists(DATA_FILE):
