@@ -5,6 +5,7 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 DATA_FILE = "ranking.json"
+ENABLED_FILE = "ranking_enabled.json"
 
 CORS(app, resources={r"/*": {"origins": "*"}})
 
@@ -12,6 +13,11 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 if not os.path.exists(DATA_FILE):
     with open(DATA_FILE, 'w') as f:
         json.dump([], f)
+
+# 初回用：ランキングON/OFF状態ファイル作成（デフォルトON）
+if not os.path.exists(ENABLED_FILE):
+    with open(ENABLED_FILE, 'w') as f:
+        json.dump({"enabled": True}, f)
 
 @app.route("/submit", methods=["POST"])
 def submit_score():
@@ -39,10 +45,27 @@ def submit_score():
 def get_ranking():
     with open(DATA_FILE, 'r') as f:
         scores = json.load(f)
-    
     scores = sorted(scores, key=lambda x: x["score"], reverse=True)[:10]
-    # ここで配列を"ranking"キーに入れて返す
     return jsonify({"ranking": scores})
+
+# ランキング表示ON/OFF状態取得
+@app.route("/ranking-enabled", methods=["GET"])
+def get_ranking_enabled():
+    if not os.path.exists(ENABLED_FILE):
+        enabled = True
+    else:
+        with open(ENABLED_FILE, 'r') as f:
+            enabled = json.load(f).get("enabled", True)
+    return jsonify({"enabled": enabled})
+
+# ランキング表示ON/OFF状態変更（管理者用）
+@app.route("/ranking-enabled", methods=["POST"])
+def set_ranking_enabled():
+    data = request.get_json()
+    enabled = bool(data.get("enabled", True))
+    with open(ENABLED_FILE, 'w') as f:
+        json.dump({"enabled": enabled}, f)
+    return jsonify({"success": True, "enabled": enabled})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
