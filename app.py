@@ -67,5 +67,29 @@ def set_ranking_enabled():
         json.dump({"enabled": enabled}, f)
     return jsonify({"success": True, "enabled": enabled})
 
+# 不正スコア削除API
+@app.route("/delete-score", methods=["POST"])
+def delete_score():
+    data = request.get_json()
+    name = data.get("name")
+    score = data.get("score")
+
+    if not name or score is None:
+        return jsonify({"success": False, "error": "Invalid data"}), 400
+
+    with open(DATA_FILE, 'r') as f:
+        scores = json.load(f)
+
+    # 該当するスコアを削除
+    new_scores = [s for s in scores if not (s["name"] == name and s["score"] == score)]
+
+    if len(new_scores) == len(scores):
+        return jsonify({"success": False, "error": "Score not found"}), 404
+
+    with open(DATA_FILE, 'w') as f:
+        json.dump(new_scores, f)
+
+    return jsonify({"success": True})
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
