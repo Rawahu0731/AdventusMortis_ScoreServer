@@ -7,6 +7,11 @@ app = Flask(__name__)
 DATA_FILE = "ranking.json"
 ENABLED_FILE = "ranking_enabled.json"
 
+# 不適切ワードのリスト（必要に応じて編集）
+BAD_WORDS = [
+    "セックス","せっくす","sex","ちんこ","チンコ","chinko","うんこ","ウンコ","unko","まんこ","マンコ","manko","〇","おっぱい","オッパイ","oppai","乳首","ちくび","チクビ","chikubi","tikubi","ちんちん","ちんぽ","チンポ","chinpo","しっこ","糞","porn","fuck","pussy","bitch","えろ","エロ","ero","エ口","裸","射精","勃起","ぼっき","ヌード","nude","オナ","ペニス","penis","レイプ","中出し","フェラ","ｵｯﾊﾟｲ","ｴﾛ","0ppai","opp@i","oppa1"
+]
+
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # 初回用：空のランキングファイル作成
@@ -19,6 +24,16 @@ if not os.path.exists(ENABLED_FILE):
     with open(ENABLED_FILE, 'w') as f:
         json.dump({"enabled": False}, f)
 
+def is_name_valid(name: str) -> bool:
+    """名前が不適切ワードを含まないかチェックする。小文字比較で部分一致を拒否。"""
+    if not name:
+        return False
+    lowered = name.lower()
+    for bad in BAD_WORDS:
+        if bad.lower() in lowered:
+            return False
+    return True
+
 @app.route("/submit", methods=["POST"])
 def submit_score():
     data = request.get_json()
@@ -30,10 +45,20 @@ def submit_score():
     if not name or score is None:
         return jsonify({"success": False, "error": "Invalid data"}), 400
 
+    # 不適切ワードチェック（元の名前で判定）
+    if not is_name_valid(name):
+        return jsonify({"success": False, "error": "Name contains prohibited content"}), 400
+
+    # 名前が10文字より長ければ先頭10文字で切り捨て（保存時のみ）
+    if len(name) > 10:
+        saved_name = name[:10]
+    else:
+        saved_name = name
+
     with open(DATA_FILE, 'r') as f:
         scores = json.load(f)
 
-    scores.append({"name": name, "score": score})
+    scores.append({"name": saved_name, "score": score})
     scores = sorted(scores, key=lambda x: x["score"], reverse=True)[:10]
 
     with open(DATA_FILE, 'w') as f:
